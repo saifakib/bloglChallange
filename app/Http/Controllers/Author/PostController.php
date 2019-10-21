@@ -100,6 +100,7 @@ class PostController extends Controller
 
         //all admin user whose role is admin
         $users = User::where('role_id','1')->get();
+        // when send multiple users use notify
         Notification::send($users, new NewAuthorPost($post));
 
         Toastr::success('Post Successfully Saved', 'Posted');

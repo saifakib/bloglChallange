@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Post;
 use App\Category;
 use App\Tag;
+use App\Subscriber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -14,6 +15,8 @@ use Intervention\Image\Facades\Image;
 use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\AuthorPostApproved;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\SubscriberInform;
 
 class PostController extends Controller
 {
@@ -95,6 +98,14 @@ class PostController extends Controller
         //many to many relation
         $post->categories()->attach($request->categories);
         $post->tags()->attach($request->tags);
+
+        //Inform all subsciber
+        $subscribers = Subscriber::all();
+        foreach($subscribers as $subscriber)
+        {
+            Notification::route('mail',$subscriber->subscribeEmail)
+                        ->notify(new SubscriberInform($post));
+        }
 
         Toastr::success('Post Successfully Saved', 'Posted');
         return redirect()->route('admin.post.index');
@@ -205,8 +216,16 @@ class PostController extends Controller
         {
             $post->is_approved = true;
             $post->save();
-            //send notification that post user post is approved
+            //send notification that post user post is approved 
+            // when send single user use notify
             $post->user->notify(new AuthorPostApproved($post));
+
+            $subscribers = Subscriber::all();
+            foreach ($subscribers as $subscriber)
+            {
+                Notification::route('mail',$subscriber->subscribeEmail)
+                    ->notify(new SubscriberInform($post));
+            }
             Toastr::success('Post SUccessfully Approved :)','Approved');
         }
         else{
