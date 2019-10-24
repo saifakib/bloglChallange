@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Category;
+use App\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -10,6 +11,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Brian2694\Toastr\Facades\Toastr;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NotifyAuthors;
 
 class CategoryController extends Controller
 {
@@ -83,6 +86,9 @@ class CategoryController extends Controller
         $category->slug = $slug;
         $category->image = $imageName;
         $category->save();
+
+        $authors = User::where('role_id',2)->get();
+        Notification::send($authors, new NotifyAuthors($category));
 
         Toastr::success('Category Added Successfully','Add');
         return redirect()->route('admin.category.index');
@@ -200,6 +206,7 @@ class CategoryController extends Controller
             Storage::disk('public')->delete('category/slider'.$category->image);
         }
         $category->delete();
+
         Toastr::success('Category Delete Successfully:)','Delete');
         return redirect()->route('admin.category.index');
     }
